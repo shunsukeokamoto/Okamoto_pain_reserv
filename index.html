@@ -19,6 +19,7 @@
     .product-card img{width:180px;height:120px;border-radius:10px;object-fit:cover;background:#eee}
     .product-card h2{font-size:22px}.product-description{margin-top:5px;color:var(--sub)}.product-price{margin-top:7px;font-weight:700}
     .stock{margin-top:5px;font-size:14px;font-weight:700;color:var(--success)}.stock.low{color:var(--warning)}.stock.soldout{color:var(--danger)}
+    .step-note{margin-top:6px;color:var(--sub);font-size:12px}
     .card-actions{min-width:152px;text-align:center}.qty-control{display:flex;align-items:center;justify-content:center;gap:11px}
     .qty-button{width:38px;height:38px;border:0;border-radius:8px;background:var(--brown);color:#fff;font-size:21px;line-height:1}
     .qty-button:hover:not(:disabled),.detail-button:hover,.primary-button:hover:not(:disabled),.save-button:hover:not(:disabled){background:var(--brown-dark)}
@@ -26,18 +27,15 @@
     .detail-button,.primary-button{border:0;border-radius:9px;background:var(--brown);color:#fff}.detail-button{margin-top:12px;padding:9px 15px}
     #detailView{display:none;padding:24px;border-radius:14px;background:var(--paper);box-shadow:var(--shadow)}
     .back-button{display:inline-block;margin-bottom:18px;border:0;background:transparent;color:var(--brown);font-weight:700}
-    .slider{position:relative;overflow:hidden;border-radius:12px;background:#eee}
-    .slider-track{display:flex;transition:transform .35s ease}
+    .slider{position:relative;overflow:hidden;border-radius:12px;background:#eee}.slider-track{display:flex;transition:transform .35s ease}
     .slide{min-width:100%;aspect-ratio:3/2}.slide img{display:block;width:100%;height:100%;object-fit:cover}
     .slider-arrow{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.88);color:var(--brown);font-size:24px;box-shadow:0 3px 10px rgba(0,0,0,.12)}
     .slider-arrow.prev{left:12px}.slider-arrow.next{right:12px}.slider-arrow:disabled{display:none}
-    .slider-dots{display:flex;justify-content:center;gap:8px;margin-top:12px}
-    .slider-dot{width:9px;height:9px;border:0;border-radius:50%;background:#c8c1b9;padding:0}.slider-dot.active{background:var(--brown)}
+    .slider-dots{display:flex;justify-content:center;gap:8px;margin-top:12px}.slider-dot{width:9px;height:9px;border:0;border-radius:50%;background:#c8c1b9;padding:0}.slider-dot.active{background:var(--brown)}
     .image-empty{display:flex;align-items:center;justify-content:center;aspect-ratio:3/2;color:var(--sub);background:#eee;border-radius:10px}
     #detailName{margin-top:18px;font-size:28px}#detailPrice{margin-top:4px;font-size:20px;font-weight:700}
     .detail-block{margin-top:20px}.detail-block h3{margin-bottom:4px;font-size:18px}.detail-qty{margin-top:24px}
-    .save-button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:9px;background:var(--brown);color:#fff;font-weight:700}
-    .save-button:disabled{cursor:not-allowed;opacity:.55}
+    .save-button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:9px;background:var(--brown);color:#fff;font-weight:700}.save-button:disabled{cursor:not-allowed;opacity:.55}
     .panel{margin-top:30px;padding:24px;border-radius:14px;background:var(--paper);box-shadow:var(--shadow)}
     .cart-empty{color:var(--sub)}.cart-item{display:flex;justify-content:space-between;gap:20px;padding:11px 0;border-bottom:1px solid var(--line)}
     .total{margin-top:18px;text-align:right;font-size:23px}.form-group{margin-top:18px}.form-group label{display:block;margin-bottom:6px;font-weight:700}
@@ -50,13 +48,16 @@
   </style>
 </head>
 <body>
-  <header><h1>岡本パン</h1><p>分け合う日々を楽しむパン</p></header>
+  <header>
+    <h1>岡本パン</h1><p>分け合う日々を楽しむパン</p>
+    <p>7/18（土）11:00〜16:00 島田駅前サンカク公園　専用予約フォーム</p>
+  </header>
   <main class="container">
     <section id="listView"><h2 class="section-title">パンを選ぶ</h2><div id="productList"><div class="loading">商品を読み込んでいます…</div></div></section>
 
     <section id="detailView">
       <button class="back-button" type="button" id="backButton">← 商品一覧へ</button>
-      <div id="detailSlider" class="slider">
+      <div class="slider">
         <div id="sliderTrack" class="slider-track"></div>
         <button id="sliderPrev" class="slider-arrow prev" type="button" aria-label="前の画像">‹</button>
         <button id="sliderNext" class="slider-arrow next" type="button" aria-label="次の画像">›</button>
@@ -65,13 +66,13 @@
 
       <h2 id="detailName"></h2>
       <p id="detailPrice"></p>
-
       <div class="detail-block"><h3>残り数量</h3><p id="detailStock" class="stock"></p></div>
       <div class="detail-block"><h3>特徴</h3><p id="detailFeature"></p></div>
       <div class="detail-block"><h3>原材料</h3><p id="detailIngredients"></p></div>
       <div class="detail-block"><h3>内容量</h3><p id="detailAmount"></p></div>
       <div class="detail-block"><h3>保存期間</h3><p id="detailShelfLife"></p></div>
 
+      <p id="detailStepNote" class="step-note"></p>
       <div class="qty-control detail-qty">
         <button class="qty-button" type="button" id="detailMinus">−</button>
         <span class="qty-value" id="detailQty">0</span>
@@ -87,7 +88,7 @@
       <form id="reservationForm" novalidate>
         <div class="form-group"><label for="customerName">お名前（フルネーム） <span class="required">必須</span></label><input id="customerName" name="customerName" type="text" autocomplete="name" required></div>
         <div class="form-group"><label for="customerEmail">メールアドレス <span class="required">必須</span></label><input id="customerEmail" name="customerEmail" type="email" autocomplete="email" required></div>
-        <div class="form-group"><label for="customerMemo">備考（任意）</label><textarea id="customerMemo" name="customerMemo"></textarea></div>
+        <div class="form-group"><label for="customerMemo">備考、コメント（任意）</label><textarea id="customerMemo" name="customerMemo"></textarea></div>
         <button class="primary-button" id="submitButton" type="submit">予約を送信する</button>
         <div id="formMessage" class="message" role="status" aria-live="polite"></div>
       </form>
@@ -95,6 +96,8 @@
   </main>
 
   <script>
+    const PRODUCT_STATUS_SOLD_OUT = "完売";
+
     let breads = [];
     let quantities = [];
     let currentIndex = 0;
@@ -114,139 +117,396 @@
     const sliderPrev = document.getElementById("sliderPrev");
     const sliderNext = document.getElementById("sliderNext");
 
-    function formatQuantity(value){return Number.isInteger(value)?String(value):value.toFixed(1)}
-    function yen(value){return "¥"+Number(value).toLocaleString("ja-JP")}
-    function normalizeQuantity(value){return Math.max(0,Math.round(value*2)/2)}
-    function getStockText(bread){if(bread.remaining<=0)return"売り切れ";if(bread.remaining<=3)return"残りわずか（"+formatQuantity(bread.remaining)+"個）";return"残り "+formatQuantity(bread.remaining)+"個"}
-    function getStockClass(bread){if(bread.remaining<=0)return"stock soldout";if(bread.remaining<=3)return"stock low";return"stock"}
-    function getMainImage(bread){return bread.images&&bread.images.length>0?bread.images[0]:""}
-
-    function setProducts(products,preserveQuantities){
-      const previous={};
-      if(preserveQuantities){breads.forEach(function(bread,index){previous[String(bread.id)]=quantities[index]||0})}
-      breads=products||[];
-      quantities=breads.map(function(bread){const oldQuantity=previous[String(bread.id)]||0;return Math.min(oldQuantity,Number(bread.remaining)||0)});
-      renderProducts();renderCart();
+    function formatQuantity(value) {
+      const number = Number(value);
+      return Number.isInteger(number) ? String(number) : number.toFixed(1);
     }
 
-    function loadProducts(){
-      productList.innerHTML='<div class="loading">商品を読み込んでいます…</div>';
-      google.script.run.withSuccessHandler(function(products){setProducts(products,false)}).withFailureHandler(function(error){
-        productList.innerHTML='<div class="message error" style="display:block">'+(error&&error.message?error.message:"商品の読み込みに失敗しました。")+"</div>";
-      }).getProducts();
+    function yen(value) {
+      return "¥" + Number(value).toLocaleString("ja-JP");
     }
 
-    function renderProducts(){
-      productList.innerHTML="";
-      if(breads.length===0){productList.innerHTML='<div class="loading">現在販売中の商品はありません。</div>';return}
-      breads.forEach(function(bread,index){
-        const soldOut=bread.remaining<=0;
-        const mainImage=getMainImage(bread);
-        const card=document.createElement("article");
-        card.className="product-card";
-        card.innerHTML=(mainImage?'<img src="'+mainImage+'" alt="'+bread.name+'">':'<div class="image-empty">画像なし</div>')+
-          "<div><h2>"+bread.name+'</h2><p class="product-description">'+bread.feature+'</p><p class="product-price">'+yen(bread.price)+'</p><p class="'+getStockClass(bread)+'">'+getStockText(bread)+"</p></div>"+
-          '<div class="card-actions"><div class="qty-control"><button class="qty-button" type="button" data-action="minus" data-index="'+index+'"'+(quantities[index]<=0?" disabled":"")+'>−</button><span class="qty-value">'+formatQuantity(quantities[index])+'</span><button class="qty-button" type="button" data-action="plus" data-index="'+index+'"'+(soldOut||quantities[index]+0.5>bread.remaining?" disabled":"")+'>＋</button></div><button class="detail-button" type="button" data-action="detail" data-index="'+index+'">詳しく見る</button></div>';
+    function normalizeQuantity(value, step) {
+      return Math.max(0, Math.round(value / step) * step);
+    }
+
+    function isSoldOut(bread) {
+      return bread.status === PRODUCT_STATUS_SOLD_OUT || bread.remaining <= 0;
+    }
+
+    function getStockText(bread) {
+      if (isSoldOut(bread)) return "完売しました";
+      if (bread.remaining <= bread.step * 3) {
+        return "残りわずか（" + formatQuantity(bread.remaining) + "個）";
+      }
+      return "残り " + formatQuantity(bread.remaining) + "個";
+    }
+
+    function getStockClass(bread) {
+      if (isSoldOut(bread)) return "stock soldout";
+      if (bread.remaining <= bread.step * 3) return "stock low";
+      return "stock";
+    }
+
+    function getMainImage(bread) {
+      return bread.images && bread.images.length > 0 ? bread.images[0] : "";
+    }
+
+    function setProducts(products, preserveQuantities) {
+      const previous = {};
+
+      if (preserveQuantities) {
+        breads.forEach(function(bread, index) {
+          previous[String(bread.id)] = quantities[index] || 0;
+        });
+      }
+
+      breads = products || [];
+      quantities = breads.map(function(bread) {
+        const oldQuantity = previous[String(bread.id)] || 0;
+        return isSoldOut(bread) ? 0 : Math.min(oldQuantity, Number(bread.remaining) || 0);
+      });
+
+      renderProducts();
+      renderCart();
+    }
+
+    function loadProducts() {
+      productList.innerHTML = '<div class="loading">商品を読み込んでいます…</div>';
+
+      google.script.run
+        .withSuccessHandler(function(products) {
+          setProducts(products, false);
+        })
+        .withFailureHandler(function(error) {
+          productList.innerHTML =
+            '<div class="message error" style="display:block">' +
+            (error && error.message ? error.message : "商品の読み込みに失敗しました。") +
+            "</div>";
+        })
+        .getProducts();
+    }
+
+    function renderProducts() {
+      productList.innerHTML = "";
+
+      if (breads.length === 0) {
+        productList.innerHTML = '<div class="loading">現在表示中の商品はありません。</div>';
+        return;
+      }
+
+      breads.forEach(function(bread, index) {
+        const soldOut = isSoldOut(bread);
+        const mainImage = getMainImage(bread);
+        const card = document.createElement("article");
+        card.className = "product-card";
+
+        card.innerHTML =
+          (mainImage
+            ? '<img src="' + mainImage + '" alt="' + bread.name + '">'
+            : '<div class="image-empty">画像なし</div>') +
+          "<div>" +
+            "<h2>" + bread.name + "</h2>" +
+            '<p class="product-description">' + bread.feature + "</p>" +
+            '<p class="product-price">' + yen(bread.price) + "</p>" +
+            '<p class="' + getStockClass(bread) + '">' + getStockText(bread) + "</p>" +
+            '<p class="step-note">' + formatQuantity(bread.step) + "個刻み</p>" +
+          "</div>" +
+          '<div class="card-actions">' +
+            '<div class="qty-control">' +
+              '<button class="qty-button" type="button" data-action="minus" data-index="' + index + '"' +
+                (soldOut || quantities[index] <= 0 ? " disabled" : "") + ">−</button>" +
+              '<span class="qty-value">' + formatQuantity(quantities[index]) + "</span>" +
+              '<button class="qty-button" type="button" data-action="plus" data-index="' + index + '"' +
+                (soldOut || quantities[index] + bread.step > bread.remaining + 0.000001 ? " disabled" : "") +
+              ">＋</button>" +
+            "</div>" +
+            '<button class="detail-button" type="button" data-action="detail" data-index="' + index + '">詳しく見る</button>' +
+          "</div>";
+
         productList.appendChild(card);
       });
     }
 
-    function changeHomeQuantity(index,difference){
-      const next=normalizeQuantity(quantities[index]+difference);
-      quantities[index]=Math.min(next,breads[index].remaining);
-      renderProducts();renderCart();
+    function changeHomeQuantity(index, difference) {
+      const bread = breads[index];
+
+      if (isSoldOut(bread)) return;
+
+      const next = normalizeQuantity(quantities[index] + difference, bread.step);
+      quantities[index] = Math.min(next, bread.remaining);
+
+      renderProducts();
+      renderCart();
     }
 
-    function renderSlider(images){
-      currentSlide=0;sliderTrack.innerHTML="";sliderDots.innerHTML="";
-      if(!images||images.length===0){sliderTrack.innerHTML='<div class="image-empty">画像なし</div>';sliderPrev.disabled=true;sliderNext.disabled=true;return}
-      images.forEach(function(url,index){
-        const slide=document.createElement("div");slide.className="slide";slide.innerHTML='<img src="'+url+'" alt="商品画像 '+(index+1)+'">';sliderTrack.appendChild(slide);
-        const dot=document.createElement("button");dot.className="slider-dot"+(index===0?" active":"");dot.type="button";dot.addEventListener("click",function(){goToSlide(index)});sliderDots.appendChild(dot);
+    function renderSlider(images) {
+      currentSlide = 0;
+      sliderTrack.innerHTML = "";
+      sliderDots.innerHTML = "";
+
+      if (!images || images.length === 0) {
+        sliderTrack.innerHTML = '<div class="image-empty">画像なし</div>';
+        sliderPrev.disabled = true;
+        sliderNext.disabled = true;
+        return;
+      }
+
+      images.forEach(function(url, index) {
+        const slide = document.createElement("div");
+        slide.className = "slide";
+        slide.innerHTML = '<img src="' + url + '" alt="商品画像 ' + (index + 1) + '">';
+        sliderTrack.appendChild(slide);
+
+        const dot = document.createElement("button");
+        dot.className = "slider-dot" + (index === 0 ? " active" : "");
+        dot.type = "button";
+        dot.addEventListener("click", function() {
+          goToSlide(index);
+        });
+        sliderDots.appendChild(dot);
       });
+
       updateSlider();
     }
 
-    function goToSlide(index){
-      const images=breads[currentIndex].images||[];
-      if(images.length===0)return;
-      currentSlide=(index+images.length)%images.length;
+    function goToSlide(index) {
+      const images = breads[currentIndex].images || [];
+      if (images.length === 0) return;
+
+      currentSlide = (index + images.length) % images.length;
       updateSlider();
     }
 
-    function updateSlider(){
-      const images=breads[currentIndex].images||[];
-      sliderTrack.style.transform="translateX(-"+(currentSlide*100)+"%)";
-      sliderDots.querySelectorAll(".slider-dot").forEach(function(dot,index){dot.classList.toggle("active",index===currentSlide)});
-      const hasMultiple=images.length>1;
-      sliderPrev.disabled=!hasMultiple;sliderNext.disabled=!hasMultiple;
+    function updateSlider() {
+      const images = breads[currentIndex].images || [];
+      sliderTrack.style.transform = "translateX(-" + (currentSlide * 100) + "%)";
+
+      sliderDots.querySelectorAll(".slider-dot").forEach(function(dot, index) {
+        dot.classList.toggle("active", index === currentSlide);
+      });
+
+      const hasMultiple = images.length > 1;
+      sliderPrev.disabled = !hasMultiple;
+      sliderNext.disabled = !hasMultiple;
     }
 
-    function showDetail(index){
-      currentIndex=index;detailQuantity=quantities[index];
-      const bread=breads[index];
-      detailName.textContent=bread.name;detailPrice.textContent=yen(bread.price);
-      detailStock.textContent=getStockText(bread);detailStock.className=getStockClass(bread);
-      detailFeature.textContent=bread.feature;detailIngredients.textContent=bread.ingredients;
-      detailAmount.textContent=bread.amount;detailShelfLife.textContent=bread.shelfLife;
-      detailQty.textContent=formatQuantity(detailQuantity);
-      renderSlider(bread.images);updateDetailButtons();
-      listView.style.display="none";detailView.style.display="block";window.scrollTo({top:0,behavior:"smooth"});
+    function showDetail(index) {
+      currentIndex = index;
+      detailQuantity = quantities[index];
+
+      const bread = breads[index];
+
+      detailName.textContent = bread.name;
+      detailPrice.textContent = yen(bread.price);
+      detailStock.textContent = getStockText(bread);
+      detailStock.className = getStockClass(bread);
+      detailFeature.textContent = bread.feature;
+      detailIngredients.textContent = bread.ingredients;
+      detailAmount.textContent = bread.amount;
+      detailShelfLife.textContent = bread.shelfLife;
+      detailStepNote.textContent = formatQuantity(bread.step) + "個刻みで選択できます";
+      detailQty.textContent = formatQuantity(detailQuantity);
+
+      renderSlider(bread.images);
+      updateDetailButtons();
+
+      listView.style.display = "none";
+      detailView.style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    function updateDetailButtons(){
-      const bread=breads[currentIndex];
-      detailMinus.disabled=detailQuantity<=0;
-      detailPlus.disabled=bread.remaining<=0||detailQuantity+0.5>bread.remaining;
-      saveDetailQty.disabled=bread.remaining<=0&&detailQuantity<=0;
+    function updateDetailButtons() {
+      const bread = breads[currentIndex];
+      const soldOut = isSoldOut(bread);
+
+      detailMinus.disabled = soldOut || detailQuantity <= 0;
+      detailPlus.disabled =
+        soldOut ||
+        detailQuantity + bread.step > bread.remaining + 0.000001;
+
+      saveDetailQty.disabled = soldOut;
     }
 
-    function closeDetail(){detailView.style.display="none";listView.style.display="block";renderProducts()}
-
-    function renderCart(){
-      const selected=breads.map(function(bread,index){return{id:bread.id,name:bread.name,price:bread.price,quantity:quantities[index]}}).filter(function(item){return item.quantity>0});
-      if(selected.length===0){cartList.className="cart-empty";cartList.textContent="まだ商品が選択されていません";totalPrice.textContent="合計 ¥0";return}
-      cartList.className="";cartList.innerHTML="";let total=0;
-      selected.forEach(function(item){const subtotal=item.price*item.quantity;total+=subtotal;const row=document.createElement("div");row.className="cart-item";row.innerHTML="<span>"+item.name+" × "+formatQuantity(item.quantity)+"</span><strong>"+yen(subtotal)+"</strong>";cartList.appendChild(row)});
-      totalPrice.textContent="合計 "+yen(total);
+    function closeDetail() {
+      detailView.style.display = "none";
+      listView.style.display = "block";
+      renderProducts();
     }
 
-    function showMessage(text,type){formMessage.className="message "+type;formMessage.textContent=text}
-    function buildReservationData(){return{customerName:customerName.value.trim(),customerEmail:customerEmail.value.trim(),memo:customerMemo.value.trim(),items:breads.map(function(bread,index){return{id:bread.id,quantity:quantities[index]}}).filter(function(item){return item.quantity>0})}}
-    function resetReservation(){quantities.fill(0);form.reset();renderProducts();renderCart()}
+    function renderCart() {
+      const selected = breads.map(function(bread, index) {
+        return {
+          id: bread.id,
+          name: bread.name,
+          price: bread.price,
+          quantity: quantities[index]
+        };
+      }).filter(function(item) {
+        return item.quantity > 0;
+      });
 
-    productList.addEventListener("click",function(event){
-      const button=event.target.closest("button[data-action]");if(!button)return;
-      const index=Number(button.dataset.index),action=button.dataset.action;
-      if(action==="minus")changeHomeQuantity(index,-0.5);
-      if(action==="plus")changeHomeQuantity(index,0.5);
-      if(action==="detail")showDetail(index);
+      if (selected.length === 0) {
+        cartList.className = "cart-empty";
+        cartList.textContent = "まだ商品が選択されていません";
+        totalPrice.textContent = "合計 ¥0";
+        return;
+      }
+
+      cartList.className = "";
+      cartList.innerHTML = "";
+
+      let total = 0;
+
+      selected.forEach(function(item) {
+        const subtotal = item.price * item.quantity;
+        total += subtotal;
+
+        const row = document.createElement("div");
+        row.className = "cart-item";
+        row.innerHTML =
+          "<span>" + item.name + " × " + formatQuantity(item.quantity) + "</span>" +
+          "<strong>" + yen(subtotal) + "</strong>";
+
+        cartList.appendChild(row);
+      });
+
+      totalPrice.textContent = "合計 " + yen(total);
+    }
+
+    function showMessage(text, type) {
+      formMessage.className = "message " + type;
+      formMessage.textContent = text;
+    }
+
+    function buildReservationData() {
+      return {
+        customerName: customerName.value.trim(),
+        customerEmail: customerEmail.value.trim(),
+        memo: customerMemo.value.trim(),
+        items: breads.map(function(bread, index) {
+          return {
+            id: bread.id,
+            quantity: quantities[index]
+          };
+        }).filter(function(item) {
+          return item.quantity > 0;
+        })
+      };
+    }
+
+    function resetReservation() {
+      quantities.fill(0);
+      form.reset();
+      renderProducts();
+      renderCart();
+    }
+
+    productList.addEventListener("click", function(event) {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+
+      const index = Number(button.dataset.index);
+      const action = button.dataset.action;
+      const step = breads[index].step;
+
+      if (action === "minus") changeHomeQuantity(index, -step);
+      if (action === "plus") changeHomeQuantity(index, step);
+      if (action === "detail") showDetail(index);
     });
 
-    backButton.addEventListener("click",closeDetail);
-    sliderPrev.addEventListener("click",function(){goToSlide(currentSlide-1)});
-    sliderNext.addEventListener("click",function(){goToSlide(currentSlide+1)});
-    detailMinus.addEventListener("click",function(){detailQuantity=normalizeQuantity(detailQuantity-0.5);detailQty.textContent=formatQuantity(detailQuantity);updateDetailButtons()});
-    detailPlus.addEventListener("click",function(){const bread=breads[currentIndex];detailQuantity=Math.min(normalizeQuantity(detailQuantity+0.5),bread.remaining);detailQty.textContent=formatQuantity(detailQuantity);updateDetailButtons()});
-    saveDetailQty.addEventListener("click",function(){quantities[currentIndex]=detailQuantity;renderCart();closeDetail()});
+    backButton.addEventListener("click", closeDetail);
+    sliderPrev.addEventListener("click", function() { goToSlide(currentSlide - 1); });
+    sliderNext.addEventListener("click", function() { goToSlide(currentSlide + 1); });
 
-    form.addEventListener("submit",function(event){
-      event.preventDefault();formMessage.className="message";formMessage.textContent="";
-      const data=buildReservationData();
-      if(data.items.length===0){showMessage("パンを1つ以上選択してください。","error");return}
-      if(!data.customerName){showMessage("お名前を入力してください。","error");return}
-      if(!data.customerEmail||!form.customerEmail.checkValidity()){showMessage("正しいメールアドレスを入力してください。","error");return}
-      submitButton.disabled=true;submitButton.textContent="送信中…";
-      google.script.run.withSuccessHandler(function(result){
-        submitButton.disabled=false;submitButton.textContent="予約を送信する";
-        showMessage("予約を受け付けました。予約番号："+result.reservationId+"　確認メールをご確認ください。","success");
-        resetReservation();setProducts(result.products,false);
-        window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"});
-      }).withFailureHandler(function(error){
-        submitButton.disabled=false;submitButton.textContent="予約を送信する";
-        showMessage(error&&error.message?error.message:"送信に失敗しました。時間をおいて再度お試しください。","error");
-        google.script.run.withSuccessHandler(function(products){setProducts(products,true)}).getProducts();
-      }).submitReservation(data);
+    detailMinus.addEventListener("click", function() {
+      const bread = breads[currentIndex];
+      detailQuantity = normalizeQuantity(detailQuantity - bread.step, bread.step);
+      detailQty.textContent = formatQuantity(detailQuantity);
+      updateDetailButtons();
+    });
+
+    detailPlus.addEventListener("click", function() {
+      const bread = breads[currentIndex];
+
+      detailQuantity = Math.min(
+        normalizeQuantity(detailQuantity + bread.step, bread.step),
+        bread.remaining
+      );
+
+      detailQty.textContent = formatQuantity(detailQuantity);
+      updateDetailButtons();
+    });
+
+    saveDetailQty.addEventListener("click", function() {
+      quantities[currentIndex] = detailQuantity;
+      renderCart();
+      closeDetail();
+    });
+
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();
+      formMessage.className = "message";
+      formMessage.textContent = "";
+
+      const data = buildReservationData();
+
+      if (data.items.length === 0) {
+        showMessage("パンを1つ以上選択してください。", "error");
+        return;
+      }
+
+      if (!data.customerName) {
+        showMessage("お名前を入力してください。", "error");
+        return;
+      }
+
+      if (!data.customerEmail || !form.customerEmail.checkValidity()) {
+        showMessage("正しいメールアドレスを入力してください。", "error");
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = "送信中…";
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          submitButton.disabled = false;
+          submitButton.textContent = "予約を送信する";
+
+          showMessage(
+            "予約を受け付けました。予約番号：" +
+            result.reservationId +
+            "　確認メールをご確認ください。",
+            "success"
+          );
+
+          resetReservation();
+          setProducts(result.products, false);
+
+          window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: "smooth"
+          });
+        })
+        .withFailureHandler(function(error) {
+          submitButton.disabled = false;
+          submitButton.textContent = "予約を送信する";
+
+          showMessage(
+            error && error.message
+              ? error.message
+              : "送信に失敗しました。時間をおいて再度お試しください。",
+            "error"
+          );
+
+          google.script.run
+            .withSuccessHandler(function(products) {
+              setProducts(products, true);
+            })
+            .getProducts();
+        })
+        .submitReservation(data);
     });
 
     loadProducts();

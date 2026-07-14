@@ -3,6 +3,13 @@ const RESERVATION_SHEET_NAME = "予約一覧";
 const PRODUCT_SHEET_NAME = "商品管理";
 const SPREADSHEET_PROPERTY_KEY = "RESERVATION_SPREADSHEET_ID";
 
+const RESERVATION_STATUS_ACTIVE = "予約済";
+const RESERVATION_STATUS_CANCELED = "キャンセル";
+
+const PRODUCT_STATUS_ACTIVE = "販売中";
+const PRODUCT_STATUS_SOLD_OUT = "完売";
+const PRODUCT_STATUS_HIDDEN = "非表示";
+
 function doGet() {
   return HtmlService.createHtmlOutputFromFile("index")
     .setTitle("岡本パン 予約サイト")
@@ -11,9 +18,14 @@ function doGet() {
 
 function getProducts() {
   const spreadsheet = getOrCreateSpreadsheet_();
+  const reservationSheet = getOrCreateReservationSheet_(spreadsheet);
   const productSheet = getOrCreateProductSheet_(spreadsheet);
+
+  ensureProductFormulas_(productSheet);
+  SpreadsheetApp.flush();
+
   return readProducts_(productSheet).filter(function(product) {
-    return product.isActive;
+    return product.status !== PRODUCT_STATUS_HIDDEN;
   });
 }
 
@@ -25,8 +37,12 @@ function submitReservation(data) {
 
   try {
     const spreadsheet = getOrCreateSpreadsheet_();
-    const productSheet = getOrCreateProductSheet_(spreadsheet);
     const reservationSheet = getOrCreateReservationSheet_(spreadsheet);
+    const productSheet = getOrCreateProductSheet_(spreadsheet);
+
+    ensureProductFormulas_(productSheet);
+    SpreadsheetApp.flush();
+
     const products = readProducts_(productSheet);
     const productMap = {};
 
@@ -37,14 +53,18 @@ function submitReservation(data) {
     const normalizedItems = data.items.map(function(item) {
       const product = productMap[String(item.id)];
 
-      if (!product || !product.isActive) {
+      if (!product || product.status === PRODUCT_STATUS_HIDDEN) {
         throw new Error("販売を終了した商品が含まれています。ページを再読み込みしてください。");
       }
 
-      const quantity = Number(item.quantity);
-      validateQuantity_(quantity);
+      if (product.status === PRODUCT_STATUS_SOLD_OUT || product.remaining <= 0) {
+        throw new Error(product.name + "は完売しています。");
+      }
 
-      if (quantity > product.remaining) {
+      const quantity = Number(item.quantity);
+      validateQuantity_(quantity, product.step, product.name);
+
+      if (quantity > product.remaining + 0.000001) {
         throw new Error(
           product.name + "は残り" + formatQuantity_(product.remaining) +
           "個のため、選択された数量を予約できません。"
@@ -56,40 +76,52 @@ function submitReservation(data) {
         name: product.name,
         price: product.price,
         quantity: quantity,
-        rowNumber: product.rowNumber
+        step: product.step
       };
     });
 
     const reservationId = createReservationId_();
     const createdAt = new Date();
-    const total = calculateTotal_(normalizedItems);
-    const itemSummary = normalizedItems.map(function(item) {
-      return item.name + " × " + formatQuantity_(item.quantity);
-    }).join("\n");
+    const customerName = String(data.customerName || "").trim();
+    const customerEmail = String(data.customerEmail || "").trim();
+    const memo = String(data.memo || "").trim();
 
-    reservationSheet.appendRow([
-      createdAt,
-      reservationId,
-      String(data.customerName || "").trim(),
-      String(data.customerEmail || "").trim(),
-      String(data.memo || "").trim(),
-      itemSummary,
-      total
-    ]);
+    const rows = normalizedItems.map(function(item) {
+      const subtotal = Number(item.price) * Number(item.quantity);
 
-    normalizedItems.forEach(function(item) {
-      const reservedCell = productSheet.getRange(item.rowNumber, 5);
-      const currentReserved = Number(reservedCell.getValue()) || 0;
-      reservedCell.setValue(currentReserved + item.quantity);
+      return [
+        createdAt,
+        reservationId,
+        customerName,
+        customerEmail,
+        memo,
+        item.id,
+        item.name,
+        item.quantity,
+        item.price,
+        subtotal,
+        RESERVATION_STATUS_ACTIVE
+      ];
     });
 
+    const startRow = reservationSheet.getLastRow() + 1;
+    reservationSheet
+      .getRange(startRow, 1, rows.length, rows[0].length)
+      .setValues(rows);
+
     SpreadsheetApp.flush();
+    ensureProductFormulas_(productSheet);
+    SpreadsheetApp.flush();
+
+    const total = normalizedItems.reduce(function(sum, item) {
+      return sum + item.price * item.quantity;
+    }, 0);
 
     sendConfirmationMail_({
       reservationId: reservationId,
-      customerName: String(data.customerName || "").trim(),
-      customerEmail: String(data.customerEmail || "").trim(),
-      memo: String(data.memo || "").trim(),
+      customerName: customerName,
+      customerEmail: customerEmail,
+      memo: memo,
       items: normalizedItems,
       total: total
     });
@@ -98,7 +130,7 @@ function submitReservation(data) {
       success: true,
       reservationId: reservationId,
       products: readProducts_(productSheet).filter(function(product) {
-        return product.isActive;
+        return product.status !== PRODUCT_STATUS_HIDDEN;
       })
     };
   } finally {
@@ -121,6 +153,7 @@ function getOrCreateSpreadsheet_() {
   const spreadsheet = SpreadsheetApp.create("岡本パン 予約管理");
   properties.setProperty(SPREADSHEET_PROPERTY_KEY, spreadsheet.getId());
   console.log("予約管理スプレッドシート: " + spreadsheet.getUrl());
+
   return spreadsheet;
 }
 
@@ -128,24 +161,7 @@ function getOrCreateReservationSheet_(spreadsheet) {
   let sheet = spreadsheet.getSheetByName(RESERVATION_SHEET_NAME);
 
   if (!sheet) {
-    sheet = spreadsheet.insertSheet(RESERVATION_SHEET_NAME);
-  }
-
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow([
-      "予約日時",
-      "予約番号",
-      "お名前",
-      "メールアドレス",
-      "備考",
-      "予約内容",
-      "合計金額"
-    ]);
-    sheet.setFrozenRows(1);
-    sheet.getRange(1, 1, 1, 7).setFontWeight("bold");
-    sheet.getRange("A:A").setNumberFormat("yyyy/mm/dd hh:mm:ss");
-    sheet.getRange("G:G").setNumberFormat("¥#,##0");
-    sheet.autoResizeColumns(1, 7);
+    sheet = createReservationSheet_(spreadsheet);
   }
 
   return sheet;
@@ -153,29 +169,92 @@ function getOrCreateReservationSheet_(spreadsheet) {
 
 function getOrCreateProductSheet_(spreadsheet) {
   let sheet = spreadsheet.getSheetByName(PRODUCT_SHEET_NAME);
+
   if (!sheet) {
     sheet = createProductSheet_(spreadsheet);
   }
+
   return sheet;
 }
 
 /**
- * 商品管理シートだけを新しい構成で作り直します。
- * 予約一覧シートは残ります。
+ * V2用のシートを作成します。
+ *
+ * 既存の「商品管理」「予約一覧」は、日時付きのバックアップ名へ変更します。
+ * その後、新しい構成の2シートを作ります。
+ *
+ * Apps Script画面から一度だけ手動実行してください。
  */
-function rebuildProductSheet() {
+function setupV2Sheets() {
   const spreadsheet = getOrCreateSpreadsheet_();
-  const oldSheet = spreadsheet.getSheetByName(PRODUCT_SHEET_NAME);
+  const timeZone = Session.getScriptTimeZone() || "Asia/Tokyo";
+  const suffix = Utilities.formatDate(new Date(), timeZone, "yyyyMMdd_HHmmss");
 
-  if (oldSheet) {
-    spreadsheet.deleteSheet(oldSheet);
+  backupSheetIfExists_(spreadsheet, PRODUCT_SHEET_NAME, suffix);
+  backupSheetIfExists_(spreadsheet, RESERVATION_SHEET_NAME, suffix);
+
+  const reservationSheet = createReservationSheet_(spreadsheet);
+  const productSheet = createProductSheet_(spreadsheet);
+
+  spreadsheet.setActiveSheet(productSheet);
+  console.log("V2用シートを作成しました: " + spreadsheet.getUrl());
+
+  return spreadsheet.getUrl();
+}
+
+function backupSheetIfExists_(spreadsheet, sheetName, suffix) {
+  const sheet = spreadsheet.getSheetByName(sheetName);
+
+  if (!sheet) {
+    return;
   }
 
-  const newSheet = createProductSheet_(spreadsheet);
-  spreadsheet.setActiveSheet(newSheet);
+  let backupName = sheetName + "_旧_" + suffix;
+  let number = 2;
 
-  console.log("商品管理シートを作り直しました: " + spreadsheet.getUrl());
-  return spreadsheet.getUrl();
+  while (spreadsheet.getSheetByName(backupName)) {
+    backupName = sheetName + "_旧_" + suffix + "_" + number;
+    number += 1;
+  }
+
+  sheet.setName(backupName);
+}
+
+function createReservationSheet_(spreadsheet) {
+  const sheet = spreadsheet.insertSheet(RESERVATION_SHEET_NAME);
+
+  sheet.appendRow([
+    "予約日時",
+    "予約番号",
+    "お名前",
+    "メールアドレス",
+    "備考",
+    "商品ID",
+    "商品名",
+    "数量",
+    "単価",
+    "小計",
+    "状態"
+  ]);
+
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, 11).setFontWeight("bold");
+  sheet.getRange("A:A").setNumberFormat("yyyy/mm/dd hh:mm:ss");
+  sheet.getRange("H:H").setNumberFormat("0.0");
+  sheet.getRange("I:J").setNumberFormat("¥#,##0");
+
+  const statusRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(
+      [RESERVATION_STATUS_ACTIVE, RESERVATION_STATUS_CANCELED],
+      true
+    )
+    .setAllowInvalid(false)
+    .build();
+
+  sheet.getRange("K2:K").setDataValidation(statusRule);
+  sheet.autoResizeColumns(1, 11);
+
+  return sheet;
 }
 
 function createProductSheet_(spreadsheet) {
@@ -186,7 +265,9 @@ function createProductSheet_(spreadsheet) {
     "商品名",
     "価格",
     "製造数",
-    "予約数",
+    "数量単位",
+    "予約数合計",
+    "残数",
     "特徴",
     "原材料",
     "内容量",
@@ -196,7 +277,8 @@ function createProductSheet_(spreadsheet) {
     "画像URL3",
     "画像URL4",
     "画像URL5",
-    "販売中"
+    "販売状態",
+    "並び順"
   ]);
 
   const initialProducts = [
@@ -205,87 +287,169 @@ function createProductSheet_(spreadsheet) {
       "カンパーニュ",
       900,
       27,
-      0,
+      0.5,
+      "",
+      "",
       "静岡県産小麦と自家製酵母で長時間発酵。小麦の香りを楽しめる、岡本パンの定番です。",
       "小麦、塩、自家製酵母",
       "700g",
       "常温で3日程度。食べきれない場合はスライスして冷凍してください。",
-      "https://picsum.photos/seed/campagne1/1200/800",
-      "https://picsum.photos/seed/campagne2/1200/800",
-      "https://picsum.photos/seed/campagne3/1200/800",
       "",
       "",
-      true
+      "",
+      "",
+      "",
+      PRODUCT_STATUS_ACTIVE,
+      1
     ],
     [
-      "pain-de-mie",
-      "パンドミ",
-      650,
-      32,
-      0,
-      "毎日食べたい、やさしい味わいの食事パンです。",
-      "小麦、牛乳、バター、塩、酵母",
-      "600g",
-      "常温で2日程度。食べきれない場合は冷凍保存してください。",
-      "https://picsum.photos/seed/paindemie1/1200/800",
-      "https://picsum.photos/seed/paindemie2/1200/800",
+      "donut",
+      "ドーナッツ",
+      350,
+      30,
+      1,
+      "",
+      "",
+      "ふんわりとした生地を香ばしく揚げたドーナッツです。",
+      "小麦、砂糖、卵、乳製品、油、酵母、塩",
+      "1個",
+      "当日中にお召し上がりください。",
       "",
       "",
       "",
-      true
+      "",
+      "",
+      PRODUCT_STATUS_ACTIVE,
+      2
     ]
   ];
 
-  sheet.getRange(2, 1, initialProducts.length, initialProducts[0].length)
+  sheet
+    .getRange(2, 1, initialProducts.length, initialProducts[0].length)
     .setValues(initialProducts);
 
   sheet.setFrozenRows(1);
-  sheet.getRange(1, 1, 1, 15).setFontWeight("bold");
+  sheet.getRange(1, 1, 1, 18).setFontWeight("bold");
   sheet.getRange("C:C").setNumberFormat("¥#,##0");
-  sheet.getRange("D:E").setNumberFormat("0.0");
-  sheet.autoResizeColumns(1, 15);
+  sheet.getRange("D:G").setNumberFormat("0.0");
+
+  const productStatusRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(
+      [
+        PRODUCT_STATUS_ACTIVE,
+        PRODUCT_STATUS_SOLD_OUT,
+        PRODUCT_STATUS_HIDDEN
+      ],
+      true
+    )
+    .setAllowInvalid(false)
+    .build();
+
+  sheet.getRange("Q2:Q").setDataValidation(productStatusRule);
+
+  const stepRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(["0.5", "1"], true)
+    .setAllowInvalid(false)
+    .build();
+
+  sheet.getRange("E2:E").setDataValidation(stepRule);
+
+  ensureProductFormulas_(sheet);
+  sheet.autoResizeColumns(1, 18);
 
   return sheet;
 }
 
+function ensureProductFormulas_(sheet) {
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    return;
+  }
+
+  for (let row = 2; row <= lastRow; row += 1) {
+    const productId = String(sheet.getRange(row, 1).getValue() || "").trim();
+
+    if (!productId) {
+      sheet.getRange(row, 6, 1, 2).clearContent();
+      continue;
+    }
+
+    const reservedFormula =
+      '=SUMIFS(\'' + RESERVATION_SHEET_NAME + '\'!$H:$H,' +
+      '\'' + RESERVATION_SHEET_NAME + '\'!$F:$F,$A' + row + ',' +
+      '\'' + RESERVATION_SHEET_NAME + '\'!$K:$K,"' +
+      RESERVATION_STATUS_ACTIVE + '")';
+
+    const remainingFormula = '=MAX(0,$D' + row + '-$F' + row + ')';
+
+    sheet.getRange(row, 6).setFormula(reservedFormula);
+    sheet.getRange(row, 7).setFormula(remainingFormula);
+  }
+}
+
 function readProducts_(sheet) {
   const lastRow = sheet.getLastRow();
+
   if (lastRow < 2) {
     return [];
   }
 
-  const values = sheet.getRange(2, 1, lastRow - 1, 15).getValues();
+  const values = sheet.getRange(2, 1, lastRow - 1, 18).getValues();
 
-  return values.map(function(row, index) {
-    const production = Number(row[3]) || 0;
-    const reserved = Number(row[4]) || 0;
+  return values
+    .map(function(row, index) {
+      const images = [
+        String(row[11] || "").trim(),
+        String(row[12] || "").trim(),
+        String(row[13] || "").trim(),
+        String(row[14] || "").trim(),
+        String(row[15] || "").trim()
+      ].filter(function(url) {
+        return url !== "";
+      });
 
-    const images = [
-      String(row[9] || "").trim(),
-      String(row[10] || "").trim(),
-      String(row[11] || "").trim(),
-      String(row[12] || "").trim(),
-      String(row[13] || "").trim()
-    ].filter(function(url) {
-      return url !== "";
+      const step = Number(row[4]) === 1 ? 1 : 0.5;
+      const status = normalizeProductStatus_(row[16]);
+
+      return {
+        id: String(row[0] || "").trim(),
+        name: String(row[1] || "").trim(),
+        price: Number(row[2]) || 0,
+        production: Number(row[3]) || 0,
+        step: step,
+        reserved: Number(row[5]) || 0,
+        remaining: Math.max(0, Number(row[6]) || 0),
+        feature: String(row[7] || ""),
+        ingredients: String(row[8] || ""),
+        amount: String(row[9] || ""),
+        shelfLife: String(row[10] || ""),
+        images: images,
+        status: status,
+        sortOrder: Number(row[17]) || 9999,
+        rowNumber: index + 2
+      };
+    })
+    .filter(function(product) {
+      return product.id && product.name;
+    })
+    .sort(function(a, b) {
+      return a.sortOrder - b.sortOrder;
     });
+}
 
-    return {
-      id: String(row[0]),
-      name: String(row[1]),
-      price: Number(row[2]) || 0,
-      production: production,
-      reserved: reserved,
-      remaining: Math.max(0, Math.round((production - reserved) * 2) / 2),
-      feature: String(row[5] || ""),
-      ingredients: String(row[6] || ""),
-      amount: String(row[7] || ""),
-      shelfLife: String(row[8] || ""),
-      images: images,
-      isActive: row[14] === true || String(row[14]).toUpperCase() === "TRUE",
-      rowNumber: index + 2
-    };
-  });
+function normalizeProductStatus_(value) {
+  const status = String(value || "").trim();
+
+  if (status === PRODUCT_STATUS_SOLD_OUT) {
+    return PRODUCT_STATUS_SOLD_OUT;
+  }
+
+  if (status === PRODUCT_STATUS_HIDDEN) {
+    return PRODUCT_STATUS_HIDDEN;
+  }
+
+  return PRODUCT_STATUS_ACTIVE;
 }
 
 function validateBasicReservation_(data) {
@@ -309,32 +473,32 @@ function validateBasicReservation_(data) {
   }
 }
 
-function validateQuantity_(quantity) {
-  if (
-    !Number.isFinite(quantity) ||
-    quantity <= 0 ||
-    Math.round(quantity * 2) !== quantity * 2
-  ) {
-    throw new Error("予約数量に不正な値があります。");
+function validateQuantity_(quantity, step, productName) {
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    throw new Error(productName + "の予約数量が正しくありません。");
   }
-}
 
-function calculateTotal_(items) {
-  return items.reduce(function(total, item) {
-    return total + Number(item.price) * Number(item.quantity);
-  }, 0);
+  const ratio = quantity / step;
+
+  if (Math.abs(ratio - Math.round(ratio)) > 0.000001) {
+    throw new Error(
+      productName + "は" + formatQuantity_(step) + "個刻みで選択してください。"
+    );
+  }
 }
 
 function createReservationId_() {
   const timeZone = Session.getScriptTimeZone() || "Asia/Tokyo";
   const timestamp = Utilities.formatDate(new Date(), timeZone, "yyyyMMddHHmmss");
   const random = Math.floor(100 + Math.random() * 900);
+
   return "OP-" + timestamp + "-" + random;
 }
 
 function sendConfirmationMail_(reservation) {
   const itemLines = reservation.items.map(function(item) {
     const subtotal = Number(item.price) * Number(item.quantity);
+
     return [
       item.name,
       "数量：" + formatQuantity_(item.quantity),
