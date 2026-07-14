@@ -10,7 +10,13 @@ const PRODUCT_STATUS_ACTIVE = "販売中";
 const PRODUCT_STATUS_SOLD_OUT = "完売";
 const PRODUCT_STATUS_HIDDEN = "非表示";
 
-function doGet() {
+function doGet(e) {
+  if (e && e.parameter && e.parameter.mode === "bridge") {
+    return HtmlService.createHtmlOutputFromFile("bridge")
+      .setTitle("岡本パン 連携")
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
   return HtmlService.createHtmlOutputFromFile("index")
     .setTitle("岡本パン 予約サイト")
     .addMetaTag("viewport", "width=device-width, initial-scale=1");
