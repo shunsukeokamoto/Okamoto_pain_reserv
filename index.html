@@ -5,29 +5,39 @@
   <meta charset="UTF-8">
   <title>岡本パン 予約サイト</title>
   <style>
-    :root{--bg:#f8f7f3;--paper:#fff;--text:#333;--sub:#6f6b66;--brown:#5a4332;--brown-dark:#463326;--line:#e8e3dc;--danger:#b83a3a;--success:#2f6c45;--shadow:0 8px 24px rgba(61,48,37,.08)}
+    :root{--bg:#f8f7f3;--paper:#fff;--text:#333;--sub:#6f6b66;--brown:#5a4332;--brown-dark:#463326;--line:#e8e3dc;--danger:#b83a3a;--success:#2f6c45;--warning:#9a6417;--shadow:0 8px 24px rgba(61,48,37,.08)}
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;line-height:1.7}
     button,input,textarea{font:inherit}button{cursor:pointer}
     header{background:var(--paper);padding:28px 20px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.04)}
-    header h1{font-size:clamp(28px,5vw,36px);letter-spacing:.08em}header p{margin-top:6px;color:var(--sub);font-size:14px}
+    header h1{font-size:clamp(28px,5vw,36px);letter-spacing:.08em}
+    header p{margin-top:6px;color:var(--sub);font-size:14px}
     .container{width:min(920px,calc(100% - 32px));margin:0 auto;padding:32px 0 72px}
     .section-title{margin-bottom:18px;font-size:24px}
+    .loading{padding:28px;text-align:center;color:var(--sub);background:var(--paper);border-radius:14px;box-shadow:var(--shadow)}
     .product-card{display:grid;grid-template-columns:180px 1fr auto;gap:22px;align-items:center;margin-bottom:18px;padding:18px;border-radius:14px;background:var(--paper);box-shadow:var(--shadow)}
-    .product-card img{width:180px;height:120px;border-radius:10px;object-fit:cover}
+    .product-card img{width:180px;height:120px;border-radius:10px;object-fit:cover;background:#eee}
     .product-card h2{font-size:22px}.product-description{margin-top:5px;color:var(--sub)}.product-price{margin-top:7px;font-weight:700}
+    .stock{margin-top:5px;font-size:14px;font-weight:700;color:var(--success)}.stock.low{color:var(--warning)}.stock.soldout{color:var(--danger)}
     .card-actions{min-width:152px;text-align:center}.qty-control{display:flex;align-items:center;justify-content:center;gap:11px}
     .qty-button{width:38px;height:38px;border:0;border-radius:8px;background:var(--brown);color:#fff;font-size:21px;line-height:1}
-    .qty-button:hover,.detail-button:hover,.primary-button:hover{background:var(--brown-dark)}
-    .qty-value{min-width:38px;text-align:center;font-size:18px;font-weight:700}
-    .detail-button,.primary-button{border:0;border-radius:9px;background:var(--brown);color:#fff}
-    .detail-button{margin-top:12px;padding:9px 15px}
+    .qty-button:hover:not(:disabled),.detail-button:hover,.primary-button:hover:not(:disabled),.save-button:hover:not(:disabled){background:var(--brown-dark)}
+    .qty-button:disabled{cursor:not-allowed;opacity:.35}.qty-value{min-width:38px;text-align:center;font-size:18px;font-weight:700}
+    .detail-button,.primary-button{border:0;border-radius:9px;background:var(--brown);color:#fff}.detail-button{margin-top:12px;padding:9px 15px}
     #detailView{display:none;padding:24px;border-radius:14px;background:var(--paper);box-shadow:var(--shadow)}
     .back-button{display:inline-block;margin-bottom:18px;border:0;background:transparent;color:var(--brown);font-weight:700}
-    #detailImage{width:100%;max-height:420px;border-radius:12px;object-fit:cover}
-    #detailName{margin-top:18px;font-size:28px}#detailPrice{margin-top:4px;font-size:20px;font-weight:700}#detailWeight,#detailDescription{margin-top:8px}
+    .slider{position:relative;overflow:hidden;border-radius:12px;background:#eee}
+    .slider-track{display:flex;transition:transform .35s ease}
+    .slide{min-width:100%;aspect-ratio:3/2}.slide img{display:block;width:100%;height:100%;object-fit:cover}
+    .slider-arrow{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.88);color:var(--brown);font-size:24px;box-shadow:0 3px 10px rgba(0,0,0,.12)}
+    .slider-arrow.prev{left:12px}.slider-arrow.next{right:12px}.slider-arrow:disabled{display:none}
+    .slider-dots{display:flex;justify-content:center;gap:8px;margin-top:12px}
+    .slider-dot{width:9px;height:9px;border:0;border-radius:50%;background:#c8c1b9;padding:0}.slider-dot.active{background:var(--brown)}
+    .image-empty{display:flex;align-items:center;justify-content:center;aspect-ratio:3/2;color:var(--sub);background:#eee;border-radius:10px}
+    #detailName{margin-top:18px;font-size:28px}#detailPrice{margin-top:4px;font-size:20px;font-weight:700}
     .detail-block{margin-top:20px}.detail-block h3{margin-bottom:4px;font-size:18px}.detail-qty{margin-top:24px}
     .save-button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:9px;background:var(--brown);color:#fff;font-weight:700}
+    .save-button:disabled{cursor:not-allowed;opacity:.55}
     .panel{margin-top:30px;padding:24px;border-radius:14px;background:var(--paper);box-shadow:var(--shadow)}
     .cart-empty{color:var(--sub)}.cart-item{display:flex;justify-content:space-between;gap:20px;padding:11px 0;border-bottom:1px solid var(--line)}
     .total{margin-top:18px;text-align:right;font-size:23px}.form-group{margin-top:18px}.form-group label{display:block;margin-bottom:6px;font-weight:700}
@@ -36,23 +46,42 @@
     .form-group textarea{min-height:100px;resize:vertical}.primary-button{width:100%;margin-top:24px;padding:16px;font-size:18px;font-weight:700}
     .primary-button:disabled{cursor:not-allowed;opacity:.55}.message{display:none;margin-top:18px;padding:12px 14px;border-radius:8px}
     .message.success{display:block;background:#eaf5ed;color:var(--success)}.message.error{display:block;background:#fbeaea;color:var(--danger)}
-    @media(max-width:720px){.product-card{grid-template-columns:1fr}.product-card img{width:100%;height:210px}.card-actions{min-width:0}.panel,#detailView{padding:20px}}
+    @media(max-width:720px){.product-card{grid-template-columns:1fr}.product-card img{width:100%;height:210px}.card-actions{min-width:0}.panel,#detailView{padding:20px}.slider-arrow{width:38px;height:38px}}
   </style>
 </head>
 <body>
   <header><h1>岡本パン</h1><p>分け合う日々を楽しむパン</p></header>
   <main class="container">
-    <section id="listView"><h2 class="section-title">パンを選ぶ</h2><div id="productList"></div></section>
+    <section id="listView"><h2 class="section-title">パンを選ぶ</h2><div id="productList"><div class="loading">商品を読み込んでいます…</div></div></section>
+
     <section id="detailView">
       <button class="back-button" type="button" id="backButton">← 商品一覧へ</button>
-      <img id="detailImage" alt="">
-      <h2 id="detailName"></h2><p id="detailPrice"></p><p id="detailWeight"></p><p id="detailDescription"></p>
+      <div id="detailSlider" class="slider">
+        <div id="sliderTrack" class="slider-track"></div>
+        <button id="sliderPrev" class="slider-arrow prev" type="button" aria-label="前の画像">‹</button>
+        <button id="sliderNext" class="slider-arrow next" type="button" aria-label="次の画像">›</button>
+      </div>
+      <div id="sliderDots" class="slider-dots"></div>
+
+      <h2 id="detailName"></h2>
+      <p id="detailPrice"></p>
+
+      <div class="detail-block"><h3>残り数量</h3><p id="detailStock" class="stock"></p></div>
+      <div class="detail-block"><h3>特徴</h3><p id="detailFeature"></p></div>
       <div class="detail-block"><h3>原材料</h3><p id="detailIngredients"></p></div>
-      <div class="detail-block"><h3>おすすめの食べ方</h3><p id="detailEat"></p></div>
-      <div class="qty-control detail-qty"><button class="qty-button" type="button" id="detailMinus">−</button><span class="qty-value" id="detailQty">0</span><button class="qty-button" type="button" id="detailPlus">＋</button></div>
+      <div class="detail-block"><h3>内容量</h3><p id="detailAmount"></p></div>
+      <div class="detail-block"><h3>保存期間</h3><p id="detailShelfLife"></p></div>
+
+      <div class="qty-control detail-qty">
+        <button class="qty-button" type="button" id="detailMinus">−</button>
+        <span class="qty-value" id="detailQty">0</span>
+        <button class="qty-button" type="button" id="detailPlus">＋</button>
+      </div>
       <button class="save-button" type="button" id="saveDetailQty">この数量を保存</button>
     </section>
+
     <section class="panel"><h2 class="section-title">予約内容</h2><div id="cartList" class="cart-empty">まだ商品が選択されていません</div><h3 class="total" id="totalPrice">合計 ¥0</h3></section>
+
     <section class="panel">
       <h2 class="section-title">お客様情報</h2>
       <form id="reservationForm" novalidate>
@@ -64,33 +93,116 @@
       </form>
     </section>
   </main>
+
   <script>
-    const breads=[
-      {id:1,name:"カンパーニュ",price:900,weight:"700g",description:"静岡県産小麦と自家製酵母で長時間発酵。",ingredients:"小麦・塩・自家製酵母",eat:"厚切りにしてトーストするのがおすすめです。",image:"https://picsum.photos/seed/campagne/900/520"},
-      {id:2,name:"パンドミ",price:650,weight:"600g",description:"毎日食べたい、やさしい味わいの食パン。",ingredients:"小麦・牛乳・バター・塩・酵母",eat:"そのままでも、軽くトーストしても楽しめます。",image:"https://picsum.photos/seed/paindemie/900/520"},
-      {id:3,name:"季節のパン",price:450,weight:"250g",description:"旬の素材を使った季節限定のパン。",ingredients:"使用する季節の素材により異なります。",eat:"軽く温めてお召し上がりください。",image:"https://picsum.photos/seed/seasonbread/900/520"}
-    ];
-    const quantities=breads.map(function(){return 0;});
-    let currentIndex=0,detailQuantity=0;
-    const listView=document.getElementById("listView"),detailView=document.getElementById("detailView"),productList=document.getElementById("productList"),cartList=document.getElementById("cartList"),totalPrice=document.getElementById("totalPrice"),form=document.getElementById("reservationForm"),submitButton=document.getElementById("submitButton"),formMessage=document.getElementById("formMessage");
-    function formatQuantity(v){return Number.isInteger(v)?String(v):v.toFixed(1)}
-    function yen(v){return "¥"+Number(v).toLocaleString("ja-JP")}
-    function normalizeQuantity(v){return Math.max(0,Math.round(v*2)/2)}
+    let breads = [];
+    let quantities = [];
+    let currentIndex = 0;
+    let detailQuantity = 0;
+    let currentSlide = 0;
+
+    const listView = document.getElementById("listView");
+    const detailView = document.getElementById("detailView");
+    const productList = document.getElementById("productList");
+    const cartList = document.getElementById("cartList");
+    const totalPrice = document.getElementById("totalPrice");
+    const form = document.getElementById("reservationForm");
+    const submitButton = document.getElementById("submitButton");
+    const formMessage = document.getElementById("formMessage");
+    const sliderTrack = document.getElementById("sliderTrack");
+    const sliderDots = document.getElementById("sliderDots");
+    const sliderPrev = document.getElementById("sliderPrev");
+    const sliderNext = document.getElementById("sliderNext");
+
+    function formatQuantity(value){return Number.isInteger(value)?String(value):value.toFixed(1)}
+    function yen(value){return "¥"+Number(value).toLocaleString("ja-JP")}
+    function normalizeQuantity(value){return Math.max(0,Math.round(value*2)/2)}
+    function getStockText(bread){if(bread.remaining<=0)return"売り切れ";if(bread.remaining<=3)return"残りわずか（"+formatQuantity(bread.remaining)+"個）";return"残り "+formatQuantity(bread.remaining)+"個"}
+    function getStockClass(bread){if(bread.remaining<=0)return"stock soldout";if(bread.remaining<=3)return"stock low";return"stock"}
+    function getMainImage(bread){return bread.images&&bread.images.length>0?bread.images[0]:""}
+
+    function setProducts(products,preserveQuantities){
+      const previous={};
+      if(preserveQuantities){breads.forEach(function(bread,index){previous[String(bread.id)]=quantities[index]||0})}
+      breads=products||[];
+      quantities=breads.map(function(bread){const oldQuantity=previous[String(bread.id)]||0;return Math.min(oldQuantity,Number(bread.remaining)||0)});
+      renderProducts();renderCart();
+    }
+
+    function loadProducts(){
+      productList.innerHTML='<div class="loading">商品を読み込んでいます…</div>';
+      google.script.run.withSuccessHandler(function(products){setProducts(products,false)}).withFailureHandler(function(error){
+        productList.innerHTML='<div class="message error" style="display:block">'+(error&&error.message?error.message:"商品の読み込みに失敗しました。")+"</div>";
+      }).getProducts();
+    }
+
     function renderProducts(){
       productList.innerHTML="";
+      if(breads.length===0){productList.innerHTML='<div class="loading">現在販売中の商品はありません。</div>';return}
       breads.forEach(function(bread,index){
-        const card=document.createElement("article");card.className="product-card";
-        card.innerHTML='<img src="'+bread.image+'" alt="'+bread.name+'"><div><h2>'+bread.name+'</h2><p class="product-description">'+bread.description+'</p><p class="product-price">'+yen(bread.price)+'</p></div><div class="card-actions"><div class="qty-control"><button class="qty-button" type="button" data-action="minus" data-index="'+index+'">−</button><span class="qty-value" id="homeQty'+index+'">'+formatQuantity(quantities[index])+'</span><button class="qty-button" type="button" data-action="plus" data-index="'+index+'">＋</button></div><button class="detail-button" type="button" data-action="detail" data-index="'+index+'">詳しく見る</button></div>';
+        const soldOut=bread.remaining<=0;
+        const mainImage=getMainImage(bread);
+        const card=document.createElement("article");
+        card.className="product-card";
+        card.innerHTML=(mainImage?'<img src="'+mainImage+'" alt="'+bread.name+'">':'<div class="image-empty">画像なし</div>')+
+          "<div><h2>"+bread.name+'</h2><p class="product-description">'+bread.feature+'</p><p class="product-price">'+yen(bread.price)+'</p><p class="'+getStockClass(bread)+'">'+getStockText(bread)+"</p></div>"+
+          '<div class="card-actions"><div class="qty-control"><button class="qty-button" type="button" data-action="minus" data-index="'+index+'"'+(quantities[index]<=0?" disabled":"")+'>−</button><span class="qty-value">'+formatQuantity(quantities[index])+'</span><button class="qty-button" type="button" data-action="plus" data-index="'+index+'"'+(soldOut||quantities[index]+0.5>bread.remaining?" disabled":"")+'>＋</button></div><button class="detail-button" type="button" data-action="detail" data-index="'+index+'">詳しく見る</button></div>';
         productList.appendChild(card);
       });
     }
-    function changeHomeQuantity(index,difference){quantities[index]=normalizeQuantity(quantities[index]+difference);document.getElementById("homeQty"+index).textContent=formatQuantity(quantities[index]);renderCart()}
+
+    function changeHomeQuantity(index,difference){
+      const next=normalizeQuantity(quantities[index]+difference);
+      quantities[index]=Math.min(next,breads[index].remaining);
+      renderProducts();renderCart();
+    }
+
+    function renderSlider(images){
+      currentSlide=0;sliderTrack.innerHTML="";sliderDots.innerHTML="";
+      if(!images||images.length===0){sliderTrack.innerHTML='<div class="image-empty">画像なし</div>';sliderPrev.disabled=true;sliderNext.disabled=true;return}
+      images.forEach(function(url,index){
+        const slide=document.createElement("div");slide.className="slide";slide.innerHTML='<img src="'+url+'" alt="商品画像 '+(index+1)+'">';sliderTrack.appendChild(slide);
+        const dot=document.createElement("button");dot.className="slider-dot"+(index===0?" active":"");dot.type="button";dot.addEventListener("click",function(){goToSlide(index)});sliderDots.appendChild(dot);
+      });
+      updateSlider();
+    }
+
+    function goToSlide(index){
+      const images=breads[currentIndex].images||[];
+      if(images.length===0)return;
+      currentSlide=(index+images.length)%images.length;
+      updateSlider();
+    }
+
+    function updateSlider(){
+      const images=breads[currentIndex].images||[];
+      sliderTrack.style.transform="translateX(-"+(currentSlide*100)+"%)";
+      sliderDots.querySelectorAll(".slider-dot").forEach(function(dot,index){dot.classList.toggle("active",index===currentSlide)});
+      const hasMultiple=images.length>1;
+      sliderPrev.disabled=!hasMultiple;sliderNext.disabled=!hasMultiple;
+    }
+
     function showDetail(index){
-      currentIndex=index;detailQuantity=quantities[index];const bread=breads[index];
-      detailImage.src=bread.image;detailImage.alt=bread.name;detailName.textContent=bread.name;detailPrice.textContent=yen(bread.price);detailWeight.textContent=bread.weight;detailDescription.textContent=bread.description;detailIngredients.textContent=bread.ingredients;detailEat.textContent=bread.eat;detailQty.textContent=formatQuantity(detailQuantity);
+      currentIndex=index;detailQuantity=quantities[index];
+      const bread=breads[index];
+      detailName.textContent=bread.name;detailPrice.textContent=yen(bread.price);
+      detailStock.textContent=getStockText(bread);detailStock.className=getStockClass(bread);
+      detailFeature.textContent=bread.feature;detailIngredients.textContent=bread.ingredients;
+      detailAmount.textContent=bread.amount;detailShelfLife.textContent=bread.shelfLife;
+      detailQty.textContent=formatQuantity(detailQuantity);
+      renderSlider(bread.images);updateDetailButtons();
       listView.style.display="none";detailView.style.display="block";window.scrollTo({top:0,behavior:"smooth"});
     }
+
+    function updateDetailButtons(){
+      const bread=breads[currentIndex];
+      detailMinus.disabled=detailQuantity<=0;
+      detailPlus.disabled=bread.remaining<=0||detailQuantity+0.5>bread.remaining;
+      saveDetailQty.disabled=bread.remaining<=0&&detailQuantity<=0;
+    }
+
     function closeDetail(){detailView.style.display="none";listView.style.display="block";renderProducts()}
+
     function renderCart(){
       const selected=breads.map(function(bread,index){return{id:bread.id,name:bread.name,price:bread.price,quantity:quantities[index]}}).filter(function(item){return item.quantity>0});
       if(selected.length===0){cartList.className="cart-empty";cartList.textContent="まだ商品が選択されていません";totalPrice.textContent="合計 ¥0";return}
@@ -98,14 +210,26 @@
       selected.forEach(function(item){const subtotal=item.price*item.quantity;total+=subtotal;const row=document.createElement("div");row.className="cart-item";row.innerHTML="<span>"+item.name+" × "+formatQuantity(item.quantity)+"</span><strong>"+yen(subtotal)+"</strong>";cartList.appendChild(row)});
       totalPrice.textContent="合計 "+yen(total);
     }
+
     function showMessage(text,type){formMessage.className="message "+type;formMessage.textContent=text}
-    function buildReservationData(){return{customerName:customerName.value.trim(),customerEmail:customerEmail.value.trim(),memo:customerMemo.value.trim(),items:breads.map(function(bread,index){return{id:bread.id,name:bread.name,price:bread.price,quantity:quantities[index]}}).filter(function(item){return item.quantity>0})}}
+    function buildReservationData(){return{customerName:customerName.value.trim(),customerEmail:customerEmail.value.trim(),memo:customerMemo.value.trim(),items:breads.map(function(bread,index){return{id:bread.id,quantity:quantities[index]}}).filter(function(item){return item.quantity>0})}}
     function resetReservation(){quantities.fill(0);form.reset();renderProducts();renderCart()}
-    productList.addEventListener("click",function(event){const button=event.target.closest("button[data-action]");if(!button)return;const index=Number(button.dataset.index),action=button.dataset.action;if(action==="minus")changeHomeQuantity(index,-.5);if(action==="plus")changeHomeQuantity(index,.5);if(action==="detail")showDetail(index)});
+
+    productList.addEventListener("click",function(event){
+      const button=event.target.closest("button[data-action]");if(!button)return;
+      const index=Number(button.dataset.index),action=button.dataset.action;
+      if(action==="minus")changeHomeQuantity(index,-0.5);
+      if(action==="plus")changeHomeQuantity(index,0.5);
+      if(action==="detail")showDetail(index);
+    });
+
     backButton.addEventListener("click",closeDetail);
-    detailMinus.addEventListener("click",function(){detailQuantity=normalizeQuantity(detailQuantity-.5);detailQty.textContent=formatQuantity(detailQuantity)});
-    detailPlus.addEventListener("click",function(){detailQuantity=normalizeQuantity(detailQuantity+.5);detailQty.textContent=formatQuantity(detailQuantity)});
+    sliderPrev.addEventListener("click",function(){goToSlide(currentSlide-1)});
+    sliderNext.addEventListener("click",function(){goToSlide(currentSlide+1)});
+    detailMinus.addEventListener("click",function(){detailQuantity=normalizeQuantity(detailQuantity-0.5);detailQty.textContent=formatQuantity(detailQuantity);updateDetailButtons()});
+    detailPlus.addEventListener("click",function(){const bread=breads[currentIndex];detailQuantity=Math.min(normalizeQuantity(detailQuantity+0.5),bread.remaining);detailQty.textContent=formatQuantity(detailQuantity);updateDetailButtons()});
     saveDetailQty.addEventListener("click",function(){quantities[currentIndex]=detailQuantity;renderCart();closeDetail()});
+
     form.addEventListener("submit",function(event){
       event.preventDefault();formMessage.className="message";formMessage.textContent="";
       const data=buildReservationData();
@@ -113,9 +237,19 @@
       if(!data.customerName){showMessage("お名前を入力してください。","error");return}
       if(!data.customerEmail||!form.customerEmail.checkValidity()){showMessage("正しいメールアドレスを入力してください。","error");return}
       submitButton.disabled=true;submitButton.textContent="送信中…";
-      google.script.run.withSuccessHandler(function(result){submitButton.disabled=false;submitButton.textContent="予約を送信する";showMessage("予約を受け付けました。予約番号："+result.reservationId+"　確認メールをご確認ください。","success");resetReservation();window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"})}).withFailureHandler(function(error){submitButton.disabled=false;submitButton.textContent="予約を送信する";showMessage(error&&error.message?error.message:"送信に失敗しました。時間をおいて再度お試しください。","error")}).submitReservation(data);
+      google.script.run.withSuccessHandler(function(result){
+        submitButton.disabled=false;submitButton.textContent="予約を送信する";
+        showMessage("予約を受け付けました。予約番号："+result.reservationId+"　確認メールをご確認ください。","success");
+        resetReservation();setProducts(result.products,false);
+        window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"});
+      }).withFailureHandler(function(error){
+        submitButton.disabled=false;submitButton.textContent="予約を送信する";
+        showMessage(error&&error.message?error.message:"送信に失敗しました。時間をおいて再度お試しください。","error");
+        google.script.run.withSuccessHandler(function(products){setProducts(products,true)}).getProducts();
+      }).submitReservation(data);
     });
-    renderProducts();renderCart();
+
+    loadProducts();
   </script>
 </body>
 </html>
