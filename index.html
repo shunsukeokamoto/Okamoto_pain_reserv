@@ -48,8 +48,10 @@
   </style>
 </head>
 <body>
-  <header><h1>岡本パン</h1><p>分け合う日々を楽しむパン</p>
-    <p>7/18（土）11:00〜16:00 島田駅前サンカク公園　専用予約フォーム</p>
+  <header>
+    <h1>岡本パン</h1><p>分け合う日々を楽しむパン</p>
+    <p>「夏だ！小豆島だ！そうめん食べよーー！」</p>
+    <p>8/1（土）15:00〜19:00 島田駅前サンカク公園　専用予約フォーム</p>
   </header>
   <main class="container">
     <section id="listView"><h2 class="section-title">パンを選ぶ</h2><div id="productList"><div class="loading">商品を読み込んでいます…</div></div></section>
@@ -87,7 +89,7 @@
       <form id="reservationForm" novalidate>
         <div class="form-group"><label for="customerName">お名前（フルネーム） <span class="required">必須</span></label><input id="customerName" name="customerName" type="text" autocomplete="name" required></div>
         <div class="form-group"><label for="customerEmail">メールアドレス <span class="required">必須</span></label><input id="customerEmail" name="customerEmail" type="email" autocomplete="email" required></div>
-        <div class="form-group"><label for="customerMemo">備考（任意）</label><textarea id="customerMemo" name="customerMemo"></textarea></div>
+        <div class="form-group"><label for="customerMemo">備考、コメント（任意）</label><textarea id="customerMemo" name="customerMemo"></textarea></div>
         <button class="primary-button" id="submitButton" type="submit">予約を送信する</button>
         <div id="formMessage" class="message" role="status" aria-live="polite"></div>
       </form>

@@ -1,7 +1,8 @@
 const SITE_NAME = "岡本パン";
 const RESERVATION_SHEET_NAME = "予約一覧";
 const PRODUCT_SHEET_NAME = "商品管理";
-const SPREADSHEET_PROPERTY_KEY = "RESERVATION_SPREADSHEET_ID";
+//const SPREADSHEET_PROPERTY_KEY = "RESERVATION_SPREADSHEET_ID";
+const SPREADSHEET_ID = "1gN5CGsROZvvHsRbNZUc8N6MTcphB7uNvjGmR_ZL2Lxg";
 
 const RESERVATION_STATUS_ACTIVE = "予約済";
 const RESERVATION_STATUS_CANCELED = "キャンセル";
@@ -10,13 +11,7 @@ const PRODUCT_STATUS_ACTIVE = "販売中";
 const PRODUCT_STATUS_SOLD_OUT = "完売";
 const PRODUCT_STATUS_HIDDEN = "非表示";
 
-function doGet(e) {
-  if (e && e.parameter && e.parameter.mode === "bridge") {
-    return HtmlService.createHtmlOutputFromFile("bridge")
-      .setTitle("岡本パン 連携")
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-  }
-
+function doGet() {
   return HtmlService.createHtmlOutputFromFile("index")
     .setTitle("岡本パン 予約サイト")
     .addMetaTag("viewport", "width=device-width, initial-scale=1");
@@ -145,6 +140,10 @@ function submitReservation(data) {
 }
 
 function getOrCreateSpreadsheet_() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+/*
+function getOrCreateSpreadsheet_() {
   const properties = PropertiesService.getScriptProperties();
   const storedId = properties.getProperty(SPREADSHEET_PROPERTY_KEY);
 
@@ -162,6 +161,7 @@ function getOrCreateSpreadsheet_() {
 
   return spreadsheet;
 }
+*/
 
 function getOrCreateReservationSheet_(spreadsheet) {
   let sheet = spreadsheet.getSheetByName(RESERVATION_SHEET_NAME);

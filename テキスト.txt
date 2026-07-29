@@ -1,0 +1,7 @@
+やることリスト
+・index.html のheaderの、日時を変更。５２行目
+・google Driveで新しいスプレッドシート作成。
+・code.gsのSPREDDSHEET_IDを変更。
+・VSCodeのTerminalで”clasp push”する。
+・Apps Scriptを開いて、再読み込み、新しいデプロイ作成。
+　
